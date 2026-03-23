@@ -56,6 +56,7 @@ def _detect_project_id() -> str:
 class Settings(BaseSettings):
     PROJECT_ID: str = _detect_project_id()
     LOCATION: str = "global"
+    GCS_BUCKET: str = "marslim-video-segments"
 
     model_config = SettingsConfigDict(
         env_file=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env")),
@@ -335,7 +336,7 @@ async def process_video_background(
                 end_time = (index + 1) * 10
                 try:
                     # 1. Upload segment to GCS Node creations
-                    bucket_name = "jwlee-gcs-video-002"
+                    bucket_name = settings.GCS_BUCKET
                     blob_name = f"segments/{video_id}/segment_{index:03d}.mp4"
 
                     try:
