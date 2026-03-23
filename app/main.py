@@ -55,8 +55,13 @@ def _detect_project_id() -> str:
 
 class Settings(BaseSettings):
     PROJECT_ID: str = _detect_project_id()
-    LOCATION: str = "global"
+    LOCATION: str = "us-central1"
     GCS_BUCKET: str = "marslim-video-segments"
+    DATABASE_URL: str = "postgresql://postgres:DefaultSearch_1234@34.64.97.194:5432/postgres"
+    DB_TABLE: str = "video_scenes_v4"
+    DESCRIPTION_MODEL: str = "gemini-3.1-flash-lite-preview"
+    EMBEDDING_MODEL: str = "gemini-embedding-2-preview"
+    EMBEDDING_MODEL_V1: str = "gemini-embedding-001"
 
     model_config = SettingsConfigDict(
         env_file=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env")),
@@ -110,7 +115,7 @@ token_manager = TokenCacheManager()
 async def lifespan(app: FastAPI):
     import httpx
 
-    conn_str = "postgresql://postgres:DefaultSearch_1234@34.64.97.194:5432/postgres"
+    conn_str = settings.DATABASE_URL
     print("🔌 Initializing AlloyDB Connection Pool...")
     app.state.pool = await asyncpg.create_pool(
         conn_str, ssl="require", timeout=30, min_size=0, max_size=10
@@ -135,7 +140,7 @@ process_status: Dict[str, Dict[str, Any]] = {}
 
 
 async def generate_description_rest(
-    httpx_client, gcs_uri: str, model_id="gemini-3.1-flash-lite-preview"
+    httpx_client, gcs_uri: str, model_id: str = settings.DESCRIPTION_MODEL
 ):
     token = token_manager.get_token()
     project_id = settings.PROJECT_ID
@@ -179,7 +184,7 @@ async def generate_description_rest(
         raise Exception(f"Parse Error {e} | Resp: {response.text}")
 
 
-def embed_gemini_embedding_001_rest(text, model_id="gemini-embedding-001"):
+def embed_gemini_embedding_001_rest(text, model_id: str = settings.EMBEDDING_MODEL_V1):
     from google.auth import default
     from google.auth.transport.requests import Request as AuthRequest
 
@@ -222,7 +227,7 @@ def get_vertex_client():
 async def embed_content_rest(
     httpx_client,
     content_payload: Dict[str, Any],
-    model_id: str = "gemini-embedding-2-preview",
+    model_id: str = settings.EMBEDDING_MODEL,
 ):
     """
     Calls Vertex AI :embedContent REST endpoint directly using Async httpx.
