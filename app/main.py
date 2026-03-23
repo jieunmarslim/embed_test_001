@@ -42,8 +42,19 @@ def vector_to_str(vec):
 
 
 # 1. Config & Settings
+def _detect_project_id() -> str:
+    """Auto-detect project ID from gcloud ADC / metadata server."""
+    try:
+        _, project = default()
+        if project:
+            return project
+    except Exception:
+        pass
+    return "YOUR_PROJECT_ID"
+
+
 class Settings(BaseSettings):
-    PROJECT_ID: str = "YOUR_PROJECT_ID"
+    PROJECT_ID: str = _detect_project_id()
     LOCATION: str = "global"
 
     model_config = SettingsConfigDict(
@@ -197,7 +208,7 @@ def embed_gemini_embedding_001_rest(text, model_id="gemini-embedding-001"):
 def get_vertex_client():
     if settings.PROJECT_ID == "YOUR_PROJECT_ID":
         raise ValueError(
-            "Please provide your Google Cloud Project ID in the .env file."
+            "PROJECT_ID not detected. Run 'gcloud init' or set PROJECT_ID in .env"
         )
     try:
         return genai.Client(
